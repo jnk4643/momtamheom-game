@@ -1,0 +1,771 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="관절 인형을 움직여 길을 여는 몸 문해력 퍼즐. 아이와 어른이 함께하는 가족 대결까지.">
+<meta property="og:title" content="몸탐험대 무릎 계곡">
+<meta property="og:description" content="관절 인형 퍼즐 3판 + 아이 vs 어른 가족 대결. 어른도 헷갈리는 무릎 문제, 풀 수 있을까요?">
+<meta property="og:type" content="website">
+<style>[hidden]{display:none!important}body{margin:0}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>
+<title>몸탐험대 무릎 계곡</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&display=swap">
+<style>
+/* Layout: one-screen game shell. Top bar, then a 5:3 stage (map / puzzle / duel / dex swap in place), modals on top.
+   Deliberately single-theme: the valley world stays bright on any host. */
+:root{
+  --bg:#E8F3EF; --panel:#FFFFFF; --ink:#22303A; --muted:#5B6B72; --line:#CFDDDC;
+  --joint:#2D7DD2; --vest:#F08A24; --warn:#D9434A; --ok:#2E9B5F; --gold:#F2BE22; --shade:#3B2E63;
+  --display:'Jua','Gowun Dodum','Apple SD Gothic Neo','Malgun Gothic',system-ui,sans-serif;
+  --body:'Gowun Dodum','Apple SD Gothic Neo','Malgun Gothic',system-ui,sans-serif;
+  color-scheme:light;
+}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  -webkit-tap-highlight-color:transparent;overscroll-behavior:none}
+.app{max-width:1120px;margin:0 auto;height:100%;display:flex;flex-direction:column;gap:10px;padding-block:10px;box-sizing:border-box}
+h1,h2,h3,.disp{font-family:var(--display);font-weight:400;margin:0;text-wrap:balance}
+button{font-family:var(--display);font-size:18px;border:0;border-radius:14px;padding:10px 16px;cursor:pointer;color:var(--ink);background:var(--panel);box-shadow:0 2px 0 var(--line)}
+button:focus-visible{outline:3px solid var(--joint);outline-offset:2px}
+button.primary{background:var(--vest);color:#fff;box-shadow:0 3px 0 #B8621A}
+button.blue{background:var(--joint);color:#fff;box-shadow:0 3px 0 #1D5A9C}
+button.ghost{background:transparent;box-shadow:none;color:var(--muted)}
+button:active{transform:translateY(2px);box-shadow:none}
+
+/* top bar */
+.bar{display:flex;align-items:center;gap:10px;min-height:44px}
+.bar .where{flex:1;min-width:0}
+.bar .where small{display:block;color:var(--muted);font-size:13px;letter-spacing:.04em}
+.bar .where .disp{font-size:24px;line-height:1.1}
+.dexbtn{display:flex;align-items:center;gap:8px}
+.dexbtn b{background:var(--gold);border-radius:999px;padding:1px 9px;font-weight:400}
+
+/* map */
+.map{flex:1;display:flex;flex-direction:column;gap:14px;min-height:0;overflow:auto}
+.hero{background:linear-gradient(180deg,#CFE8F2 0%,#E9F5EE 70%);border-radius:22px;padding:22px 22px 18px;position:relative;overflow:hidden}
+.hero .eyebrow{font-size:13px;letter-spacing:.08em;color:var(--muted)}
+.hero h1{font-size:clamp(34px,6vw,56px);line-height:1;margin:4px 0 8px}
+.hero p{margin:0;max-width:34em;line-height:1.6;color:#33454F}
+.trail{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;position:relative}
+.stop{display:flex;flex-direction:column;align-items:flex-start;gap:6px;text-align:left;padding:14px;border-radius:18px;background:var(--panel);box-shadow:0 3px 0 var(--line);font-family:var(--body);font-size:15px;min-width:0}
+.stop .num{font-family:var(--display);width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:var(--joint);color:#fff;font-size:20px}
+.stop.fam .num{background:var(--shade)}
+.stop .nm{font-family:var(--display);font-size:21px}
+.stop .sub{color:var(--muted);line-height:1.35}
+.chip{font-family:var(--display);font-size:14px;border-radius:999px;padding:2px 10px;background:#EEF3F4;color:var(--muted)}
+.chip.done{background:#DDF3E6;color:var(--ok)}
+.parent{color:var(--muted);font-size:14px;line-height:1.6;margin:0}
+@media (max-width:720px){.trail{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* play */
+.play{flex:1;display:flex;flex-direction:column;gap:8px;min-height:0}
+.goal{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.goal .txt{flex:1;min-width:200px;font-size:17px;line-height:1.45}
+.goal .txt b{font-family:var(--display);font-weight:400;font-size:19px;color:var(--joint)}
+.stage{position:relative;width:min(100%, calc((100dvh - 210px) * 5 / 3));aspect-ratio:5/3;max-width:100%;margin:0 auto;border-radius:20px;overflow:hidden;box-shadow:0 4px 0 var(--line);background:#CFE8F2}
+.stage canvas{width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+.msg{display:flex;align-items:center;gap:10px;min-height:40px;width:min(100%, calc((100dvh - 210px) * 5 / 3));margin:0 auto;font-size:17px}
+.msg .m{flex:1;min-width:0;line-height:1.4}
+.msg.bad .m{color:var(--warn)}
+.msg.good .m{color:var(--ok);font-family:var(--display);font-size:20px}
+.meter{font-family:var(--display);background:var(--panel);border-radius:999px;padding:4px 12px;font-variant-numeric:tabular-nums;white-space:nowrap}
+
+/* duel */
+.duel{flex:1;display:flex;flex-direction:column;gap:12px;min-height:0;overflow:auto}
+.qbox{background:var(--panel);border-radius:20px;padding:18px 20px;box-shadow:0 3px 0 var(--line)}
+.qbox .lv{font-size:13px;letter-spacing:.06em;color:var(--muted)}
+.qbox h2{font-size:clamp(22px,3.4vw,30px);line-height:1.3;margin-top:4px}
+.sides{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.side{border-radius:20px;padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.side.kid{background:#FFE9D3}
+.side.adult{background:#E4E0F4}
+.side .who{display:flex;justify-content:space-between;align-items:center;font-family:var(--display);font-size:20px}
+.side .score{font-variant-numeric:tabular-nums}
+.side button.opt{font-family:var(--body);font-size:17px;text-align:left;line-height:1.35;white-space:normal}
+.side button.opt.right{outline:4px solid var(--ok)}
+.side button.opt.wrong{opacity:.55}
+.side .picked{font-family:var(--display);font-size:20px;text-align:center;padding:18px 0}
+.tryit{background:#FFF7DA;border-radius:20px;padding:16px 18px;line-height:1.6;font-size:17px}
+.tryit h3{font-size:21px;margin-bottom:4px}
+.reveal{background:var(--panel);border-radius:20px;padding:16px 18px;line-height:1.6;font-size:17px;box-shadow:0 3px 0 var(--line)}
+.row{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+
+/* dex */
+.dex{flex:1;overflow:auto;display:flex;flex-direction:column;gap:12px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+.card{border-radius:18px;background:var(--panel);box-shadow:0 3px 0 var(--line);overflow:hidden;display:flex;flex-direction:column}
+.card .top{background:var(--joint);color:#fff;padding:10px 14px;font-family:var(--display);font-size:14px;letter-spacing:.04em}
+.card.disc .top{background:var(--warn)}
+.card.fam .top{background:var(--shade)}
+.card .in{padding:12px 14px 16px;display:flex;flex-direction:column;gap:6px}
+.card h3{font-size:21px;line-height:1.25}
+.card p{margin:0;line-height:1.55;font-size:15px;color:#33454F}
+.card.locked .top{background:#B9C6C8}
+.card.locked h3{color:#9AA8AB}
+
+/* modal */
+.veil{position:fixed;inset:0;background:rgba(20,30,40,.55);display:grid;place-items:center;z-index:20;padding:16px}
+.modal{background:var(--panel);border-radius:24px;max-width:520px;width:100%;max-height:100%;overflow:auto;padding:22px;box-sizing:border-box;display:flex;flex-direction:column;gap:12px;text-align:center}
+.modal h2{font-size:30px}
+.modal p{margin:0;line-height:1.6;font-size:17px}
+.modal .safe{font-size:14px;color:var(--muted)}
+.modal canvas{width:100%;max-width:360px;aspect-ratio:3/2;margin:0 auto;border-radius:16px;background:#E6F2EC}
+.count{font-family:var(--display);font-size:clamp(48px,14vw,72px);color:var(--vest);line-height:1;font-variant-numeric:tabular-nums}
+.modal .card{text-align:left;max-width:340px;margin:0 auto;width:100%}
+.toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:999px;padding:10px 18px;font-family:var(--display);font-size:17px;z-index:30;max-width:calc(100% - 32px);text-align:center}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="app">
+  <div class="bar">
+    <button id="backBtn" class="ghost" hidden>← 지도</button>
+    <div class="where"><small id="whereSmall">몸탐험대 · 시즌 1</small><div class="disp" id="whereTitle">무릎 계곡</div></div>
+    <button id="dexBtn" class="dexbtn">몸 도감 <b id="dexCount">0/7</b></button>
+  </div>
+
+  <!-- MAP -->
+  <section class="map" id="scrMap">
+    <div class="hero">
+      <div class="eyebrow">시즌 1 · 첫 번째 지역</div>
+      <h1>무릎 계곡</h1>
+      <p>탐험대원 인형의 관절을 손가락으로 움직여 길을 열어요. 인형의 관절은 진짜 몸처럼만 움직여요. 퍼즐을 풀면 이제 내 몸으로 똑같이 해 볼 차례예요.</p>
+    </div>
+    <div class="trail" id="trail"></div>
+    <p class="parent">부모님께: 화면 퍼즐 1~3분, 몸으로 따라 하기 1분 정도 걸려요. 4번 가족 대결은 아이와 어른이 패드 하나로 함께 해요. 이 버전은 시험용이라 진행 기록이 이 기기에만 저장돼요.</p>
+  </section>
+
+  <!-- PLAY -->
+  <section class="play" id="scrPlay" hidden>
+    <div class="goal">
+      <div class="txt" id="goalTxt"></div>
+      <button id="hintBtn">힌트</button>
+      <button id="resetBtn" class="ghost">처음 자세로</button>
+    </div>
+    <div class="stage" id="stage"><canvas id="cv" aria-label="탐험대원 인형 퍼즐. 팔과 다리를 끌어서 움직여요."></canvas></div>
+    <div class="msg" id="msgBar"><div class="m" id="msgTxt"></div><span class="meter" id="meter" hidden></span></div>
+  </section>
+
+  <!-- DUEL -->
+  <section class="duel" id="scrDuel" hidden></section>
+
+  <!-- DEX -->
+  <section class="dex" id="scrDex" hidden>
+    <div class="cards" id="cards"></div>
+    <div class="row" id="resetRow"></div>
+  </section>
+</div>
+
+<div class="veil" id="veil" hidden><div class="modal" id="modal" role="dialog" aria-modal="true"></div></div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(() => {
+'use strict';
+/* ---------- constants ---------- */
+const W = 1000, H = 600, GROUND = 520;
+const LEN = { torso: 118, neck: 8, head: 34, thigh: 95, shin: 90, foot: 30, uarm: 68, farm: 62 };
+const RANGE = { lean: [-15, 80], hipF: [-25, 125], hipB: [-25, 125], kneeF: [0, 145], kneeB: [0, 145], sh: [-50, 180], el: [0, 145] };
+const START = { lean: 0, hipF: 8, kneeF: 0, hipB: -8, kneeB: 0, sh: 10, el: 15 };
+const C = { skin: '#F6C9A0', skinB: '#DDAE85', vest: '#F08A24', vestD: '#C86A12', pants: '#3D6E8F', pantsB: '#2C536D',
+  shoe: '#5A3A22', hat: '#C9A15A', ink: '#22303A', joint: '#2D7DD2', warn: '#D9434A', ok: '#2E9B5F', shade: 'rgba(59,46,99,0.33)' };
+
+const CARDS = {
+  k1: { kind: '', tag: '무릎 계곡 · 통나무 동굴', title: '무릎은 뒤쪽으로 접혀요', body: '쪼그려 앉으면 무릎이 뒤쪽으로 접히면서 몸이 낮아져요. 무릎은 주로 한 방향으로 접히는 관절이에요.', where: '1번 통나무 동굴' },
+  k2: { kind: '', tag: '무릎 계곡 · 바위 오르기', title: '엉덩관절과 무릎은 한 팀', body: '바위에 발을 올릴 때는 엉덩관절이 다리를 앞으로 들고, 무릎이 함께 접혀요. 두 관절이 같이 일해야 발이 올라가요.', where: '2번 바위 오르기' },
+  k3: { kind: '', tag: '무릎 계곡 · 그림자 문지기', title: '한 발 서기는 온몸이 함께', body: '한 발로 설 때는 서 있는 다리, 몸통, 팔이 함께 균형을 맞춰요. 팔을 앞으로 뻗으면 버티기가 달라지는지 느껴 봐요.', where: '3번 그림자 문지기' },
+  d_knee: { kind: 'disc', tag: '발견 카드', title: '무릎은 앞으로 안 접혀요', body: '인형 무릎을 반대로 꺾으려 했더니 멈췄죠? 내 무릎도 그래요. 무릎 뒤에 손을 대고 굽혀 보면 어느 쪽으로 접히는지 느껴져요.', where: '인형 무릎을 반대로 꺾어 보기' },
+  d_elbow: { kind: 'disc', tag: '발견 카드', title: '팔꿈치는 앞쪽으로 접혀요', body: '팔꿈치는 손이 어깨 쪽으로 오도록 앞쪽으로 접혀요. 무릎과는 접히는 방향이 반대예요!', where: '인형 팔꿈치를 반대로 꺾어 보기' },
+  p1: { kind: 'fam', tag: '가족 대결 카드', title: '무릎뼈는 미끄러져요', body: '무릎을 굽히면 동그란 무릎뼈가 아래쪽으로 미끄러져 내려가요. 쭉 펴면 다시 올라와요.', where: '4번 가족 대결' },
+  r1: { kind: 'fam', tag: '가족 대결 카드', title: '굽힌 무릎은 살짝 돌아가요', body: '무릎은 접히기만 하는 줄 알았죠? 무릎을 굽히면 정강이를 안팎으로 살짝 돌릴 수 있어요. 쭉 펴면 거의 안 돌아가요.', where: '4번 가족 대결' },
+};
+const CARD_ORDER = ['k1', 'k2', 'k3', 'd_knee', 'd_elbow', 'p1', 'r1'];
+
+/* ---------- storage ---------- */
+const KEY = 'momtamheom_knee_v1';
+let save = { done: {}, cards: {} };
+try { const s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (s && s.done && s.cards) save = s; } catch (e) {}
+function persist() { try { localStorage.setItem(KEY, JSON.stringify(save)); } catch (e) {} }
+
+/* ---------- math ---------- */
+const rad = d => d * Math.PI / 180, deg = r => r * 180 / Math.PI;
+const dv = (a, l) => [Math.cos(rad(a)) * l, Math.sin(rad(a)) * l];
+const add = (a, b) => [a[0] + b[0], a[1] + b[1]];
+const norm = a => ((a + 180) % 360 + 360) % 360 - 180;
+const cdist = (a, b) => Math.abs(norm(a - b));
+function clampC(a, r) {
+  if (a >= r[0] && a <= r[1]) return { v: a, over: 0 };
+  const dm = cdist(a, r[0]), dx = cdist(a, r[1]);
+  return dm < dx ? { v: r[0], over: -dm } : { v: r[1], over: dx };
+}
+function segDist(p, a, b) {
+  const vx = b[0] - a[0], vy = b[1] - a[1], wx = p[0] - a[0], wy = p[1] - a[1];
+  const t = Math.max(0, Math.min(1, (wx * vx + wy * vy) / (vx * vx + vy * vy || 1)));
+  return Math.hypot(p[0] - (a[0] + t * vx), p[1] - (a[1] + t * vy));
+}
+
+/* forward kinematics, character faces right, y down */
+function fk(p, hx, hy) {
+  const P = { hip: [hx, hy] };
+  const tD = -90 + p.lean; P.tD = tD;
+  P.neck = add(P.hip, dv(tD, LEN.torso));
+  P.headC = add(P.neck, dv(tD, LEN.neck + LEN.head));
+  P.sho = add(P.hip, dv(tD, LEN.torso - 12));
+  for (const s of ['F', 'B']) {
+    const th = 90 + p.lean - p['hip' + s];
+    const knee = add(P.hip, dv(th, LEN.thigh));
+    const sh = th + p['knee' + s];
+    const ank = add(knee, dv(sh, LEN.shin));
+    const toe = add(ank, dv(Math.max(-40, Math.min(0, sh - 90)), LEN.foot)); // ankle keeps the foot flat or toes-up
+    P['th' + s] = th; P['sh' + s] = sh; P['knee' + s] = knee; P['ank' + s] = ank; P['toe' + s] = toe;
+    P['sole' + s] = Math.max(ank[1], toe[1]) + 9;
+  }
+  P.uD = 90 + p.lean - p.sh;
+  P.elb = add(P.sho, dv(P.uD, LEN.uarm));
+  P.fD = P.uD - p.el;
+  P.hand = add(P.elb, dv(P.fD, LEN.farm));
+  return P;
+}
+/* whatever body part is lowest rests on the ground: knees, hands and head can touch it too */
+function lowest(P) {
+  return Math.max(P.soleF, P.soleB, P.kneeF[1] + 12, P.kneeB[1] + 12, P.hand[1] + 9, P.elb[1] + 8, P.headC[1] + LEN.head);
+}
+function posed(p, hx) {
+  const P0 = fk(p, hx, 0);
+  return fk(p, hx, GROUND - lowest(P0));
+}
+const mid = (a, b) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+/* centre of mass from rough segment weights (two arms share one pose) */
+function com(P) {
+  const parts = [
+    [mid(P.hip, P.neck), .40], [P.headC, .10],
+    [mid(P.hip, P.kneeF), .10], [mid(P.hip, P.kneeB), .10],
+    [mid(P.kneeF, P.ankF), .045], [mid(P.kneeB, P.ankB), .045],
+    [mid(P.sho, P.elb), .06], [mid(P.elb, P.hand), .04],
+  ];
+  let w = 0, x = 0, y = 0;
+  for (const [pt, m] of parts) { x += pt[0] * m; y += pt[1] * m; w += m; }
+  return [x / w, y / w];
+}
+/* feet that stand on the floor (or on extra surfaces) give the support range */
+function support(P, extra) {
+  const xs = [];
+  for (const s of ['F', 'B']) {
+    const onFloor = GROUND - P['sole' + s] <= 6;
+    const onExtra = extra && extra(P, s);
+    if (onFloor || onExtra) xs.push(Math.min(P['ank' + s][0], P['toe' + s][0]) - 14, Math.max(P['ank' + s][0], P['toe' + s][0]) + 10);
+  }
+  return xs.length ? [Math.min(...xs), Math.max(...xs)] : null;
+}
+/* rules every real body follows: stand on feet, keep weight over them */
+function stance(P, extra) {
+  for (const s of ['F', 'B']) if (P['knee' + s][1] > GROUND - 34) return '무릎이 땅에 닿았어요. 무릎으로 걷지 말고 발로 서서 해요!';
+  if (P.hand[1] > GROUND - 16 || P.elb[1] > GROUND - 16) return '손이 땅에 닿았어요. 손은 바닥에서 떼고 해요!';
+  if (P.headC[1] + LEN.head > GROUND - 40) return '머리가 땅에 닿을 것 같아요!';
+  const sup = support(P, extra);
+  if (!sup) return '발이 땅에 닿아야 해요.';
+  const c = com(P)[0];
+  if (c > sup[1] + 6) return '앞으로 넘어지겠어요! 무게 중심(점)이 발 위에 오게 해요.';
+  if (c < sup[0] - 6) return '뒤로 넘어지겠어요! 무게 중심(점)이 발 위에 오게 해요.';
+  return null;
+}
+
+/* ---------- drawing ---------- */
+function limb(ctx, a, b, w, col, outline = true) {
+  ctx.lineCap = 'round';
+  if (outline) { ctx.strokeStyle = C.ink; ctx.lineWidth = w + 6; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); }
+  ctx.strokeStyle = col; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
+}
+function drawChar(ctx, P, opt = {}) {
+  const sh = !!opt.shadow;
+  const col = k => sh ? C.shade : C[k];
+  const o = !sh;
+  const back = [-7, 0];
+  // back arm
+  limb(ctx, add(P.sho, back), add(P.elb, back), 15, col('skinB'), o);
+  limb(ctx, add(P.elb, back), add(P.hand, back), 14, col('skinB'), o);
+  // back leg
+  limb(ctx, P.hip, P.kneeB, 22, col('pantsB'), o);
+  limb(ctx, P.kneeB, P.ankB, 18, col('pantsB'), o);
+  limb(ctx, P.ankB, P.toeB, 14, col('shoe'), o);
+  // torso + head
+  limb(ctx, P.hip, P.neck, 40, col('vest'), o);
+  if (!sh) { ctx.strokeStyle = C.vestD; ctx.lineWidth = 4; ctx.beginPath(); const m = add(P.hip, dv(P.tD, 58)); const a = add(m, dv(P.tD + 90, 17)), b = add(m, dv(P.tD - 90, 17)); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); }
+  ctx.fillStyle = col('skin'); ctx.beginPath(); ctx.arc(P.headC[0], P.headC[1], LEN.head, 0, Math.PI * 2); ctx.fill();
+  if (!sh) {
+    ctx.strokeStyle = C.ink; ctx.lineWidth = 3; ctx.stroke();
+    const brimC = add(P.headC, dv(P.tD, 10));
+    ctx.fillStyle = C.hat; ctx.beginPath(); ctx.arc(brimC[0], brimC[1], LEN.head - 2, rad(P.tD - 90), rad(P.tD + 90)); ctx.closePath(); ctx.fill(); ctx.stroke();
+    const b1 = add(brimC, dv(P.tD + 90, LEN.head + 16)), b2 = add(brimC, dv(P.tD - 90, LEN.head + 4));
+    ctx.lineWidth = 7; ctx.strokeStyle = C.ink; ctx.beginPath(); ctx.moveTo(b1[0], b1[1]); ctx.lineTo(b2[0], b2[1]); ctx.stroke();
+    ctx.lineWidth = 3; ctx.strokeStyle = '#A9823F'; ctx.beginPath(); ctx.moveTo(b1[0], b1[1]); ctx.lineTo(b2[0], b2[1]); ctx.stroke();
+    const eye = add(P.headC, dv(P.tD + 125, 13)); ctx.fillStyle = C.ink; ctx.beginPath(); ctx.arc(eye[0], eye[1], 4, 0, Math.PI * 2); ctx.fill();
+    const mo = add(P.headC, dv(P.tD + 150, 20)); ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(mo[0], mo[1], 6, rad(P.tD + 90), rad(P.tD + 210)); ctx.stroke();
+  }
+  // front leg
+  limb(ctx, P.hip, P.kneeF, 22, col('pants'), o);
+  limb(ctx, P.kneeF, P.ankF, 18, col('pants'), o);
+  limb(ctx, P.ankF, P.toeF, 14, col('shoe'), o);
+  // front arm
+  limb(ctx, P.sho, P.elb, 15, col('skin'), o);
+  limb(ctx, P.elb, P.hand, 14, col('skin'), o);
+  if (!sh) { ctx.fillStyle = C.skin; ctx.beginPath(); ctx.arc(P.hand[0], P.hand[1], 9, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = C.ink; ctx.lineWidth = 3; ctx.stroke(); }
+  if (opt.joints) {
+    const js = [['hip', P.hip], ['kneeB', P.kneeB], ['kneeF', P.kneeF], ['sho', P.sho], ['elb', P.elb]];
+    for (const [k, pt] of js) {
+      const hot = opt.hot && opt.hot.includes(k);
+      const bad = opt.bad && opt.bad.j === k;
+      const pulse = hot ? 5 + Math.sin(opt.t / 160) * 4 : 0;
+      if (hot) { ctx.strokeStyle = 'rgba(242,190,34,0.9)'; ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(pt[0], pt[1], 17 + pulse, 0, Math.PI * 2); ctx.stroke(); }
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(pt[0], pt[1], 10, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = bad ? C.warn : (k === 'kneeB' ? '#7FA9D6' : C.joint); ctx.lineWidth = bad ? 6 : 4; ctx.stroke();
+    }
+  }
+}
+
+/* scenery */
+function drawBase(ctx) {
+  const g = ctx.createLinearGradient(0, 0, 0, GROUND);
+  g.addColorStop(0, '#BFE0EE'); g.addColorStop(1, '#E7F4EC'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = '#A9CFA0'; ctx.beginPath(); ctx.moveTo(0, 380);
+  for (let x = 0; x <= W; x += 20) ctx.lineTo(x, 360 - Math.sin(x / 140) * 50 - Math.sin(x / 57) * 12);
+  ctx.lineTo(W, GROUND); ctx.lineTo(0, GROUND); ctx.fill();
+  ctx.fillStyle = '#8FBF7E'; ctx.beginPath(); ctx.moveTo(0, 450);
+  for (let x = 0; x <= W; x += 20) ctx.lineTo(x, 440 - Math.sin(x / 110 + 2) * 30);
+  ctx.lineTo(W, GROUND); ctx.lineTo(0, GROUND); ctx.fill();
+  ctx.fillStyle = '#7DB36A'; ctx.fillRect(0, GROUND, W, 26);
+  ctx.fillStyle = '#8A6A4B'; ctx.fillRect(0, GROUND + 26, W, H - GROUND - 26);
+  ctx.strokeStyle = '#5E9A4E'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+  for (let i = 0; i < 26; i++) { const x = (i * 97) % W + 10; ctx.beginPath(); ctx.moveTo(x, GROUND + 4); ctx.lineTo(x - 5, GROUND - 9); ctx.moveTo(x, GROUND + 4); ctx.lineTo(x + 6, GROUND - 7); ctx.stroke(); }
+}
+function label(ctx, text, x, y, color, size = 26, align = 'left') {
+  ctx.font = `${size}px Jua, sans-serif`; ctx.textAlign = align; ctx.textBaseline = 'alphabetic';
+  ctx.lineWidth = 6; ctx.strokeStyle = 'rgba(255,255,255,0.9)'; ctx.strokeText(text, x, y);
+  ctx.fillStyle = color; ctx.fillText(text, x, y);
+}
+
+/* ---------- levels ---------- */
+const CEIL = 262;
+const RX0 = 448, RX1 = 578, RT = GROUND - 88;
+const SHADOW = { lean: 0, hipB: 0, kneeB: 0, hipF: 90, kneeF: 90, sh: 90, el: 0 };
+const NAMES = { lean: '몸통 기울기', hipF: '엉덩관절(다리 들기)', hipB: '엉덩관절(다리 들기)', kneeF: '무릎', kneeB: '무릎', sh: '어깨(팔 들기)', el: '팔꿈치' };
+
+const LEVELS = [
+  {
+    id: 'l1', name: '통나무 동굴', sub: '쪼그려 앉기 퍼즐', hipX: 330, card: 'k1',
+    goal: '<b>통나무 동굴</b> 입구가 낮아요. 빨간 선 아래로 몸을 낮춰서 들어가요.',
+    hint: '두 무릎을 모두 굽히고, 몸통을 살짝 앞으로 숙여 봐요. 무게 중심 점이 발 위에 오게 맞춰요.', hot: ['kneeF', 'kneeB', 'hip'],
+    scene(ctx) {
+      ctx.fillStyle = '#2F3631'; ctx.fillRect(570, CEIL, W - 570, GROUND - CEIL);
+      const g = ctx.createLinearGradient(570, 0, 760, 0); g.addColorStop(0, 'rgba(47,54,49,0)'); g.addColorStop(1, 'rgba(20,24,22,0.7)'); ctx.fillStyle = g; ctx.fillRect(570, CEIL, W - 570, GROUND - CEIL);
+      ctx.fillStyle = '#9A948A'; ctx.beginPath(); ctx.moveTo(540, 0); ctx.lineTo(W, 0); ctx.lineTo(W, CEIL);
+      for (let x = W; x >= 560; x -= 40) ctx.lineTo(x, CEIL + 8 + ((x / 40) % 2) * 6);
+      ctx.lineTo(540, CEIL - 40); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#B4AEA3'; ctx.beginPath(); ctx.ellipse(700, 110, 90, 40, 0.2, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#7A5634'; ctx.beginPath(); ctx.roundRect(536, CEIL - 26, W - 536, 28, 14); ctx.fill();
+      ctx.strokeStyle = '#5A3E24'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(556, CEIL - 12, 9, 0, Math.PI * 2); ctx.stroke();
+      ctx.setLineDash([16, 12]); ctx.strokeStyle = C.warn; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(120, CEIL); ctx.lineTo(540, CEIL); ctx.stroke(); ctx.setLineDash([]);
+      label(ctx, '이 선 아래로!', 126, CEIL - 12, C.warn);
+    },
+    check(p, P) {
+      const top = P.headC[1] - LEN.head;
+      const gF = GROUND - P.soleF, gB = GROUND - P.soleB;
+      if (top < CEIL) return p.kneeF < 35 && p.kneeB < 35 ? '무릎을 굽혀서 몸을 낮춰 봐요.' : '머리가 아직 선보다 높아요. 조금 더 낮게!';
+      const st = stance(P);
+      if (st && !st.includes('넘어')) return st;
+      if (gF > 10 || gB > 10) return '한쪽 발이 떠 있어요. 두 발 모두 땅에 닿게 다른 다리도 굽혀요.';
+      if (p.kneeF < 90 || p.kneeB < 90) return '허리만 숙이면 머리를 부딪혀요. 무릎을 더 굽혀서 쪼그려 앉아요!';
+      if (p.lean > 60) return '몸통을 너무 숙였어요. 조금 세워요.';
+      if (p.lean < 5) return '몸통이 뒤로 젖혀졌어요. 살짝 앞으로 숙여요.';
+      if (Math.abs(p.hipF - p.hipB) > 25 || Math.abs(p.kneeF - p.kneeB) > 25) return '두 다리를 비슷하게 굽혀요. 쪼그려 앉을 땐 두 다리가 같이 접혀요.';
+      return st || true;
+    },
+    tryTitle: '쪼그려 앉아 동굴 들어가기', tryText: '두 발을 바닥에 붙이고 쪼그려 앉아 보세요. 손을 무릎 뒤에 대 보면 무릎이 어느 쪽으로 접히는지 느껴져요.',
+  },
+  {
+    id: 'l2', name: '바위 오르기', sub: '한 발 올리기 퍼즐', hipX: 400, card: 'k2',
+    goal: '<b>바위 오르기</b> 한쪽 발을 들어서 바위 위 발자국에 올려요.',
+    hint: '허벅지를 앞으로 들고(엉덩관절), 정강이를 접어요(무릎). 두 관절이 같이 움직여야 해요.', hot: ['hip', 'kneeF'],
+    scene(ctx) {
+      ctx.fillStyle = '#8C8578'; ctx.beginPath(); ctx.roundRect(RX0, RT, RX1 - RX0, GROUND - RT + 8, [26, 30, 6, 6]); ctx.fill();
+      ctx.fillStyle = '#A8A194'; ctx.beginPath(); ctx.roundRect(RX0 + 10, RT + 8, 50, 24, 12); ctx.fill();
+      ctx.fillStyle = '#6FA35C'; ctx.beginPath(); ctx.roundRect(RX0 + 4, RT - 4, RX1 - RX0 - 8, 12, 6); ctx.fill();
+      ctx.setLineDash([8, 7]); ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse((RX0 + RX1) / 2 + 8, RT - 10, 30, 9, 0, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
+      ctx.strokeStyle = '#5A3E24'; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(RX1 - 24, RT - 4); ctx.lineTo(RX1 - 24, RT - 110); ctx.stroke();
+      ctx.fillStyle = C.vest; ctx.beginPath(); ctx.moveTo(RX1 - 22, RT - 110); ctx.lineTo(RX1 + 30, RT - 96); ctx.lineTo(RX1 - 22, RT - 80); ctx.fill();
+      label(ctx, '발자국에 발을 올려요', RX1 + 40, RT - 40, C.ink, 24);
+    },
+    check(p, P) {
+      let lifted = false;
+      for (const s of ['F', 'B']) {
+        const ax = P['ank' + s][0], tx = P['toe' + s][0], d = P['sole' + s] - RT;
+        const over = ax >= RX0 && ax <= RX1 && tx >= RX0 - 12 && tx <= RX1 + 20;
+        const up = GROUND - P['sole' + s];
+        if (up > 24) lifted = true;
+        if (over && Math.abs(d) <= 15) {
+          const o = s === 'F' ? 'B' : 'F';
+          if (p['knee' + s] < 45) return '다리를 쭉 뻗어 걸치지 말고, 무릎을 접어서 발을 올려요.';
+          if (p['knee' + o] > 20) return '서 있는 다리는 쭉 펴요.';
+          if (Math.abs(p['hip' + o]) > 20) return '서 있는 다리가 비스듬해요. 몸 바로 아래에 두어요.';
+          if (p.lean > 25 || p.lean < -10) return '몸통을 똑바로 세워요.';
+          const onRock = (Q, k) => k === s;
+          return stance(P, onRock) || true;
+        }
+        if (ax > RX0 - 10 && ax < RX1 && d > 15 && up > 10) return '발이 바위에 걸렸어요. 다리를 더 높이 들어요!';
+        if (over && d < -15) return '발이 너무 높아요. 살짝 내려요.';
+      }
+      return lifted ? '발을 바위 위로 옮겨요. 정강이를 접어서 발을 당겨 봐요.' : '한쪽 다리를 들어 바위 위에 발을 올려요.';
+    },
+    tryTitle: '한 발 올리기', tryText: '계단 한 칸이나 낮고 튼튼한 상자에 한 발을 올렸다 내려 보세요. 엉덩관절과 무릎이 같이 접히는 걸 느껴 봐요. 양발 번갈아 3번씩!',
+  },
+  {
+    id: 'l3', name: '그림자 문지기', sub: '그림자 자세 맞추기', hipX: 300, card: 'k3', meter: true,
+    goal: '<b>그림자 문지기</b> 문을 지키는 그림자와 똑같은 자세를 만들면 문이 열려요.',
+    hint: '한 다리는 쭉 펴고, 다른 다리는 허벅지를 앞으로 들고 무릎을 접어요. 팔은 앞으로 쭉!', hot: ['kneeF', 'hip', 'sho'],
+    scene(ctx) {
+      ctx.fillStyle = '#A49D90';
+      ctx.beginPath(); ctx.roundRect(540, 100, 54, GROUND - 100, 8); ctx.fill();
+      ctx.beginPath(); ctx.roundRect(880, 100, 54, GROUND - 100, 8); ctx.fill();
+      ctx.fillStyle = '#8C8578'; ctx.beginPath(); ctx.roundRect(520, 62, 434, 46, 10); ctx.fill();
+      ctx.font = '26px Jua, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#fff'; ctx.fillText('문지기 그림자', 737, 86);
+      C.shade = 'rgba(59,46,99,0.78)'; drawChar(ctx, posed(SHADOW, 700), { shadow: true });
+      C.shade = 'rgba(59,46,99,0.2)'; drawChar(ctx, posed(SHADOW, this.hipX), { shadow: true });
+    },
+    score(p) {
+      const tol = { lean: 15, hip: 18, knee: 18, sh: 25, el: 25 };
+      let best = null;
+      for (const swap of [false, true]) {
+        const m = swap ? { hipF: 'hipB', kneeF: 'kneeB', hipB: 'hipF', kneeB: 'kneeF' } : {};
+        let sum = 0, worst = null, ok = true;
+        for (const k of ['lean', 'hipF', 'kneeF', 'hipB', 'kneeB', 'sh', 'el']) {
+          const e = Math.abs(p[m[k] || k] - SHADOW[k]);
+          const tl = tol[k.replace(/[FB]$/, '')];
+          sum += e; if (e > tl) ok = false;
+          if (!worst || e / tl > worst.r) worst = { k, r: e / tl };
+        }
+        if (!best || sum < best.sum) best = { sum, ok, worst };
+      }
+      best.pct = Math.max(0, Math.min(100, Math.round(100 - best.sum / 4)));
+      return best;
+    },
+    check(p, P) {
+      const s = this.score(p);
+      if (!s.ok) return `그림자와 가장 다른 곳: ${NAMES[s.worst.k]}`;
+      return stance(P) || true;
+    },
+    tryTitle: '한 발로 5초 버티기', tryText: '한 다리로 서서 다른 무릎을 앞으로 들고, 두 팔을 앞으로 쭉 뻗어요. 흔들려도 괜찮아요. 반대쪽 다리도 해 봐요!',
+  },
+];
+
+const LIMIT_MSG = {
+  kneeF: ['무릎은 앞으로는 안 접혀요!', '무릎은 이만큼까지만 접혀요.'],
+  kneeB: ['무릎은 앞으로는 안 접혀요!', '무릎은 이만큼까지만 접혀요.'],
+  el: ['팔꿈치는 뒤로는 안 접혀요!', '팔꿈치는 이만큼까지만 접혀요.'],
+  hipF: ['다리는 뒤로 조금만 갈 수 있어요.', '다리를 이보다 더 높이 들 순 없어요.'],
+  hipB: ['다리는 뒤로 조금만 갈 수 있어요.', '다리를 이보다 더 높이 들 순 없어요.'],
+  sh: ['팔은 뒤로 조금만 가요.', '팔은 머리 위까지 올라가요.'],
+  lean: ['몸통은 뒤로 조금만 젖혀져요.', '몸통은 이 이상 숙일 수 없어요.'],
+};
+const LIMIT_JOINT = { kneeF: 'kneeF', kneeB: 'kneeB', el: 'elb', hipF: 'hip', hipB: 'hip', sh: 'sho', lean: 'hip' };
+
+/* ---------- DOM ---------- */
+const $ = id => document.getElementById(id);
+const scr = { map: $('scrMap'), play: $('scrPlay'), duel: $('scrDuel'), dex: $('scrDex') };
+function show(name, title, small) {
+  for (const k in scr) scr[k].hidden = k !== name;
+  $('backBtn').hidden = name === 'map';
+  $('whereTitle').textContent = title || '무릎 계곡';
+  $('whereSmall').textContent = small || '몸탐험대 · 시즌 1';
+  running = name === 'play';
+  if (running) loop();
+}
+function updDex() { $('dexCount').textContent = `${CARD_ORDER.filter(k => save.cards[k]).length}/${CARD_ORDER.length}`; }
+let toastT;
+function toast(t) { const el = $('toast'); el.textContent = t; el.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => el.hidden = true, 2600); }
+function award(id, quiet) {
+  if (save.cards[id]) return false;
+  save.cards[id] = true; persist(); updDex();
+  if (!quiet) toast(`도감 카드 발견: ${CARDS[id].title}`);
+  return true;
+}
+function cardHTML(id, locked) {
+  const c = CARDS[id];
+  if (locked) return `<div class="card locked"><div class="top">${c.tag}</div><div class="in"><h3>???</h3><p>찾는 곳: ${c.where}</p></div></div>`;
+  return `<div class="card ${c.kind}"><div class="top">${c.tag}</div><div class="in"><h3>${c.title}</h3><p>${c.body}</p></div></div>`;
+}
+function openModal(html) { $('modal').innerHTML = html; $('veil').hidden = false; const b = $('modal').querySelector('button'); if (b) b.focus(); }
+function closeModal() { $('veil').hidden = true; $('modal').innerHTML = ''; }
+
+/* ---------- map ---------- */
+function renderMap() {
+  const stops = LEVELS.map((L, i) => ({ n: i + 1, id: L.id, name: L.name, sub: L.sub, duel: false }))
+    .concat([{ n: 4, id: 'duel', name: '가족 대결', sub: '아이 vs 어른 예측 대결', duel: true }]);
+  $('trail').innerHTML = stops.map(s => `<button class="stop ${s.duel ? 'fam' : ''}" data-go="${s.id}">
+      <span class="num">${s.n}</span><span class="nm">${s.name}</span><span class="sub">${s.sub}</span>
+      <span class="chip ${save.done[s.id] ? 'done' : ''}">${save.done[s.id] ? '완료' : '도전하기'}</span></button>`).join('');
+  $('trail').querySelectorAll('[data-go]').forEach(b => b.onclick = () => {
+    const id = b.dataset.go;
+    if (id === 'duel') startDuel(); else startLevel(LEVELS.findIndex(L => L.id === id));
+  });
+  updDex();
+}
+
+/* ---------- play ---------- */
+const cv = $('cv'), ctx = cv.getContext('2d');
+let running = false, lvl = null, pose = { ...START }, P = null, drag = null, hintUntil = 0, bad = null, lastLimit = 0, solved = false, moved = false;
+let confetti = [], banner = 0;
+
+function fit() {
+  const r = cv.getBoundingClientRect(); const dpr = Math.min(2, window.devicePixelRatio || 1);
+  if (!r.width) return;
+  cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr);
+}
+new ResizeObserver(fit).observe(cv);
+
+function startLevel(i) {
+  lvl = LEVELS[i]; pose = { ...START }; solved = false; moved = false; confetti = []; banner = 0; bad = null; drag = null;
+  show('play', lvl.name, `무릎 계곡 · ${i + 1}번`);
+  $('goalTxt').innerHTML = lvl.goal;
+  $('meter').hidden = !lvl.meter;
+  fit(); evaluate();
+}
+function evaluate() {
+  P = posed(pose, lvl.hipX);
+  const r = lvl.check(pose, P);
+  const bar = $('msgBar');
+  if (lvl.meter) $('meter').textContent = `일치도 ${lvl.score(pose).pct}%`;
+  if (r === true) { bar.className = 'msg good'; $('msgTxt').textContent = '딱 맞아요! 손을 떼면 성공!'; }
+  else if (!moved) { bar.className = 'msg'; $('msgTxt').textContent = '팔다리를 손가락으로 끌어 보세요. 관절(파란 동그라미)을 중심으로 돌아가요. 점은 무게 중심이에요.'; }
+  else { bar.className = 'msg'; $('msgTxt').textContent = r; }
+  return r === true;
+}
+function toLogical(e) {
+  const r = cv.getBoundingClientRect();
+  return [(e.clientX - r.left) * W / r.width, (e.clientY - r.top) * H / r.height];
+}
+function pick(pt) {
+  const segs = [
+    ['shinF', [P.kneeF, P.ankF], [P.ankF, P.toeF]], ['thighF', [P.hip, P.kneeF]],
+    ['farm', [P.elb, P.hand]], ['uarm', [P.sho, P.elb]],
+    ['shinB', [P.kneeB, P.ankB], [P.ankB, P.toeB]], ['thighB', [P.hip, P.kneeB]],
+    ['torso', [P.hip, P.neck], [P.neck, P.headC]],
+  ];
+  let best = null;
+  segs.forEach(([id, ...ss], i) => {
+    const d = Math.min(...ss.map(s => segDist(pt, s[0], s[1]))) + i * 0.8;
+    if (d < 46 && (!best || d < best.d)) best = { id, d };
+  });
+  return best && best.id;
+}
+function applyDrag(id, pt) {
+  let joint, key, raw;
+  const ang = j => deg(Math.atan2(pt[1] - j[1], pt[0] - j[0]));
+  switch (id) {
+    case 'torso': joint = P.hip; key = 'lean'; raw = norm(ang(joint) + 90); break;
+    case 'thighF': case 'thighB': { const s = id.slice(-1); joint = P.hip; key = 'hip' + s; raw = norm(90 + pose.lean - ang(joint)); break; }
+    case 'shinF': case 'shinB': { const s = id.slice(-1); joint = P['knee' + s]; key = 'knee' + s; raw = norm(ang(joint) - P['th' + s]); break; }
+    case 'uarm': joint = P.sho; key = 'sh'; raw = norm(P.uD + pose.sh - ang(joint)); break;
+    case 'farm': joint = P.elb; key = 'el'; raw = norm(P.uD - ang(joint)); break;
+  }
+  if (Math.hypot(pt[0] - joint[0], pt[1] - joint[1]) < 14) return;
+  const res = clampC(raw, RANGE[key]);
+  pose[key] = res.v; moved = true;
+  if (Math.abs(res.over) > 16) limitHit(key, res.over < 0 ? 0 : 1);
+}
+function limitHit(key, side) {
+  const now = performance.now();
+  bad = { j: LIMIT_JOINT[key], until: now + 900, text: LIMIT_MSG[key][side] };
+  if (now - lastLimit < 1200) return;
+  lastLimit = now;
+  if (side === 0 && (key === 'kneeF' || key === 'kneeB')) award('d_knee');
+  if (side === 0 && key === 'el') award('d_elbow');
+}
+cv.addEventListener('pointerdown', e => {
+  if (solved) return;
+  const pt = toLogical(e); const id = pick(pt);
+  if (!id) return;
+  drag = { id, pid: e.pointerId }; cv.setPointerCapture(e.pointerId); cv.style.cursor = 'grabbing';
+  applyDrag(id, pt); evaluate();
+});
+cv.addEventListener('pointermove', e => {
+  if (!drag || e.pointerId !== drag.pid) return;
+  applyDrag(drag.id, toLogical(e)); evaluate();
+});
+function endDrag(e) {
+  if (!drag || e.pointerId !== drag.pid) return;
+  drag = null; cv.style.cursor = 'grab';
+  if (evaluate()) win();
+}
+cv.addEventListener('pointerup', endDrag);
+cv.addEventListener('pointercancel', endDrag);
+
+$('hintBtn').onclick = () => { hintUntil = performance.now() + 4000; $('msgBar').className = 'msg'; $('msgTxt').textContent = lvl.hint; };
+$('resetBtn').onclick = () => { if (!solved) { pose = { ...START }; moved = false; evaluate(); } };
+
+function win() {
+  solved = true; banner = performance.now();
+  for (let i = 0; i < 90; i++) confetti.push({ x: P.headC[0], y: P.headC[1] - 40, vx: (Math.random() - .5) * 14, vy: -Math.random() * 14 - 4, c: ['#F2BE22', '#F08A24', '#2D7DD2', '#2E9B5F', '#D9434A'][i % 5], r: Math.random() * 6 + 4 });
+  setTimeout(bodyTry, 1300);
+}
+
+function loop() {
+  if (!running) return;
+  draw(performance.now());
+  requestAnimationFrame(loop);
+}
+function draw(t) {
+  if (!lvl || !P) return;
+  const s = cv.width / W; ctx.setTransform(s, 0, 0, s, 0, 0);
+  drawBase(ctx); lvl.scene(ctx, t, P);
+  const b = bad && t < bad.until ? bad : null;
+  drawChar(ctx, P, { joints: !solved, hot: t < hintUntil ? lvl.hot : null, bad: b, t });
+  if (!solved && moved) {
+    const c = com(P), sup = support(P, lvl.id === 'l2' ? (Q, s) => Math.abs(Q['sole' + s] - RT) <= 15 && Q['ank' + s][0] >= RX0 && Q['ank' + s][0] <= RX1 : null);
+    const okc = sup && c[0] >= sup[0] - 6 && c[0] <= sup[1] + 6;
+    const col = okc ? C.ok : C.warn;
+    if (sup) { ctx.strokeStyle = 'rgba(46,155,95,0.55)'; ctx.lineWidth = 8; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(sup[0], GROUND + 13); ctx.lineTo(sup[1], GROUND + 13); ctx.stroke(); }
+    ctx.setLineDash([6, 6]); ctx.strokeStyle = col; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(c[0], c[1]); ctx.lineTo(c[0], GROUND + 13); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = col; ctx.beginPath(); ctx.arc(c[0], c[1], 9, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(c[0], GROUND + 6); ctx.lineTo(c[0] - 9, GROUND + 22); ctx.lineTo(c[0] + 9, GROUND + 22); ctx.closePath(); ctx.fillStyle = col; ctx.fill();
+  }
+  if (b) {
+    const jp = b.j === 'elb' ? P.elb : b.j === 'sho' ? P.sho : b.j === 'kneeB' ? P.kneeB : b.j === 'kneeF' ? P.kneeF : P.hip;
+    ctx.font = '26px Jua, sans-serif'; const w = ctx.measureText(b.text).width + 28;
+    const bx = Math.max(10, Math.min(W - w - 10, jp[0] - w / 2)), by = Math.max(10, jp[1] - 90);
+    ctx.fillStyle = C.warn; ctx.beginPath(); ctx.roundRect(bx, by, w, 46, 14); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText(b.text, bx + 14, by + 24);
+  }
+  if (solved) {
+    for (const c of confetti) { c.vy += 0.5; c.x += c.vx; c.y += c.vy; ctx.fillStyle = c.c; ctx.fillRect(c.x, c.y, c.r, c.r * 1.4); }
+    const k = Math.min(1, (t - banner) / 300);
+    ctx.globalAlpha = k; label(ctx, '성공!', W / 2, 110, C.vest, 84, 'center'); ctx.globalAlpha = 1;
+  }
+}
+
+/* ---------- body try + card ---------- */
+function miniDraw(canvas, p) {
+  const c = canvas.getContext('2d'); const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const r = canvas.getBoundingClientRect(); canvas.width = r.width * dpr; canvas.height = r.height * dpr;
+  const Pm = posed(p, 0);
+  const xs = [Pm.headC[0] - 40, Pm.headC[0] + 50, Pm.toeF[0], Pm.toeB[0], Pm.hand[0], Pm.ankF[0], Pm.ankB[0]];
+  const ys = [Pm.headC[1] - 50, GROUND + 10, Pm.hand[1]];
+  const minX = Math.min(...xs) - 30, maxX = Math.max(...xs) + 30, minY = Math.min(...ys) - 10, maxY = GROUND + 20;
+  const sc = Math.min(canvas.width / (maxX - minX), canvas.height / (maxY - minY));
+  c.setTransform(sc, 0, 0, sc, (canvas.width - (maxX - minX) * sc) / 2 - minX * sc, (canvas.height - (maxY - minY) * sc) / 2 - minY * sc);
+  c.fillStyle = '#7DB36A'; c.fillRect(minX - 400, GROUND, maxX - minX + 800, 30);
+  drawChar(c, Pm, {});
+}
+function bodyTry() {
+  openModal(`<h2>이제 네 몸으로!</h2><canvas id="miniCv"></canvas>
+    <h3 class="disp" style="font-size:22px">${lvl.tryTitle}</h3><p>${lvl.tryText}</p>
+    <p class="safe">주변을 넓게 비우고, 어른이 옆에서 봐 주세요.</p>
+    <div id="tryArea"><button class="primary" id="goTry">5초 버티기 시작</button></div>`);
+  miniDraw($('miniCv'), lvl.id === 'l3' ? SHADOW : pose);
+  $('goTry').onclick = () => {
+    let n = 5; $('tryArea').innerHTML = `<div class="count" aria-live="polite">${n}</div>`;
+    const iv = setInterval(() => {
+      n--; if (n > 0) { $('tryArea').querySelector('.count').textContent = n; return; }
+      clearInterval(iv);
+      $('tryArea').innerHTML = `<div class="count">해냈어요!</div><button class="primary" id="gotCard">카드 받기</button>`;
+      $('gotCard').onclick = giveCard; $('gotCard').focus();
+    }, 1000);
+  };
+}
+function giveCard() {
+  const fresh = award(lvl.card, true);
+  save.done[lvl.id] = true; persist();
+  const i = LEVELS.indexOf(lvl), next = LEVELS[i + 1];
+  openModal(`<h2>${fresh ? '새 도감 카드!' : '도감 카드'}</h2>${cardHTML(lvl.card)}
+    <div class="row" style="justify-content:center">
+      <button id="toMap">지도로</button>
+      ${next ? `<button class="primary" id="toNext">다음: ${next.name}</button>` : `<button class="primary" id="toDuel">다음: 가족 대결</button>`}
+    </div>`);
+  $('toMap').onclick = () => { closeModal(); renderMap(); show('map'); };
+  if (next) $('toNext').onclick = () => { closeModal(); startLevel(i + 1); };
+  else $('toDuel').onclick = () => { closeModal(); startDuel(); };
+}
+
+/* ---------- family duel ---------- */
+const QS = [
+  { lv: '탐험대원 단계', q: '팔꿈치와 무릎, 접히는 방향이 같을까?', a: ['같은 쪽으로 접혀요', '서로 반대쪽으로 접혀요'], ans: 1,
+    tr: '팔을 굽혀 보고, 이번엔 무릎을 굽혀 봐요. 손과 발이 각각 어느 쪽으로 가나요?',
+    ex: '팔꿈치는 손이 앞쪽(어깨 쪽)으로 오게 접히고, 무릎은 발이 뒤쪽(엉덩이 쪽)으로 가게 접혀요. 그래서 반대예요!' },
+  { lv: '대장 단계', q: '앉아서 무릎을 굽히면, 동그란 무릎뼈는 어디로 움직일까?', a: ['위쪽으로 올라가요', '아래쪽으로 내려가요'], ans: 1,
+    tr: '의자에 앉아 다리를 쭉 펴고, 무릎뼈에 손가락을 올린 채 천천히 무릎을 굽혀 봐요.', ex: '무릎을 굽히면 무릎뼈가 아래쪽으로 미끄러져 내려가요. 다시 쭉 펴면 올라와요.', card: 'p1' },
+  { lv: '박사 단계 · 어른도 헷갈려요', q: '무릎을 굽혔을 때와 쭉 폈을 때, 발끝을 안팎으로 돌리는 건 어떻게 다를까?', a: ['둘 다 똑같이 돌아가요', '굽혔을 때만 더 잘 돌아가요'], ans: 1,
+    tr: '의자에 앉아 무릎을 굽힌 채 허벅지를 손으로 잡고, 발끝을 안쪽·바깥쪽으로 돌려 봐요. 이번엔 다리를 쭉 펴고 똑같이 해 봐요.',
+    ex: '무릎을 굽히면 정강이가 안팎으로 살짝 돌아가요. 쭉 펴면 무릎이 거의 잠겨서 잘 안 돌아가요. 무릎은 접히기만 하는 관절이 아니었어요!', card: 'r1' },
+];
+let duel;
+function startDuel() { duel = { i: 0, kid: 0, adult: 0, pick: {}, phase: 'pick' }; show('duel', '가족 대결', '무릎 계곡 · 4번'); renderDuel(); }
+function renderDuel() {
+  const el = scr.duel;
+  if (duel.i >= QS.length) return duelEnd();
+  const Q = QS[duel.i];
+  const side = (who, name) => {
+    const p = duel.pick[who];
+    let inner;
+    if (duel.phase === 'pick') inner = p === undefined
+      ? Q.a.map((t, j) => `<button class="opt" data-who="${who}" data-j="${j}">${'AB'[j]}. ${t}</button>`).join('')
+      : `<div class="picked">골랐어요! 비밀이에요</div>`;
+    else inner = Q.a.map((t, j) => `<button class="opt ${j === Q.ans ? 'right' : (j === p ? 'wrong' : '')}" disabled>${'AB'[j]}. ${t}${j === p ? ' ← 선택' : ''}</button>`).join('')
+      + `<div class="picked">${p === Q.ans ? '정답! +1' : '아쉬워요'}</div>`;
+    return `<div class="side ${who}"><div class="who"><span>${name}</span><span class="score">${duel[who]}점</span></div>${inner}</div>`;
+  };
+  let action = '';
+  const both = duel.pick.kid !== undefined && duel.pick.adult !== undefined;
+  if (duel.phase === 'pick' && both) action = `<div class="tryit"><h3>직접 해 보고 확인해요</h3>${Q.tr}</div><div class="row"><button class="primary" id="revealBtn">정답 공개</button></div>`;
+  if (duel.phase === 'reveal') action = `<div class="reveal"><b class="disp" style="font-size:20px">정답: ${'AB'[Q.ans]}</b><br>${Q.ex}</div><div class="row"><button class="primary" id="nextQ">${duel.i < QS.length - 1 ? '다음 문제' : '결과 보기'}</button></div>`;
+  el.innerHTML = `<div class="qbox"><div class="lv">문제 ${duel.i + 1} / ${QS.length} · ${Q.lv}</div><h2>${Q.q}</h2></div>
+    <div class="sides">${side('kid', '탐험대원 (아이)')}${side('adult', '대장 (어른)')}</div>${action}`;
+  el.querySelectorAll('button.opt[data-who]').forEach(b => b.onclick = () => { duel.pick[b.dataset.who] = +b.dataset.j; renderDuel(); });
+  const rb = $('revealBtn'); if (rb) rb.onclick = () => {
+    duel.phase = 'reveal';
+    if (duel.pick.kid === Q.ans) duel.kid++;
+    if (duel.pick.adult === Q.ans) duel.adult++;
+    if (Q.card) award(Q.card);
+    renderDuel();
+  };
+  const nb = $('nextQ'); if (nb) nb.onclick = () => { duel.i++; duel.pick = {}; duel.phase = 'pick'; renderDuel(); scr.duel.scrollTop = 0; };
+}
+function duelEnd() {
+  save.done.duel = true; persist();
+  const { kid, adult } = duel;
+  const head = kid > adult ? '탐험대원 승리!' : kid < adult ? '대장 승리!' : '무승부!';
+  const line = adult < QS.length ? '어른도 다 맞히지는 못했죠? 내 몸을 아는 힘, 이게 몸 문해력이에요.' : '대장님 대단해요! 이번엔 아이가 문제를 내 볼까요?';
+  scr.duel.innerHTML = `<div class="qbox" style="text-align:center"><div class="lv">가족 대결 결과</div><h2 style="font-size:40px">${head}</h2>
+    <p style="font-size:20px;margin:8px 0 0" class="disp">탐험대원 ${kid}점 · 대장 ${adult}점</p><p style="margin:10px 0 0;line-height:1.6">${line}</p></div>
+    <div class="cards">${['p1', 'r1'].map(k => cardHTML(k, !save.cards[k])).join('')}</div>
+    <div class="row"><button id="duelAgain">다시 대결</button><button class="primary" id="duelMap">지도로</button></div>`;
+  $('duelAgain').onclick = startDuel;
+  $('duelMap').onclick = () => { renderMap(); show('map'); };
+}
+
+/* ---------- dex ---------- */
+function renderDex(confirming) {
+  show('dex', '몸 도감', `모은 카드 ${CARD_ORDER.filter(k => save.cards[k]).length} / ${CARD_ORDER.length}`);
+  $('cards').innerHTML = CARD_ORDER.map(k => cardHTML(k, !save.cards[k])).join('');
+  $('resetRow').innerHTML = confirming
+    ? `<span style="align-self:center">모든 기록과 카드를 지울까요?</span><button id="rsNo">아니요</button><button class="primary" id="rsYes">네, 처음부터</button>`
+    : `<button class="ghost" id="rsAsk">처음부터 다시 하기</button>`;
+  if (confirming) { $('rsNo').onclick = () => renderDex(false); $('rsYes').onclick = () => { save = { done: {}, cards: {} }; persist(); updDex(); renderDex(false); }; }
+  else $('rsAsk').onclick = () => renderDex(true);
+}
+
+/* ---------- wiring ---------- */
+$('backBtn').onclick = () => { closeModal(); renderMap(); show('map'); };
+$('dexBtn').onclick = () => { closeModal(); renderDex(false); };
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('veil').hidden && !solved) closeModal(); });
+renderMap(); show('map');
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (running) draw(performance.now()); });
+
+/* test hook for play-testing (not used by the game) */
+window.__game = { setPose: p => { Object.assign(pose, p); moved = true; return evaluate(); }, startLevel, get pose() { return { ...pose }; },
+  judge: (i, p) => { const L = LEVELS[i], q = { ...START, ...p }; return L.check(q, posed(q, L.hipX)); } };
+})();
+</script>
+
+</html>
